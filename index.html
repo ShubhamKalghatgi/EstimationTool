@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BMS Cost Estimator — Schneider Electric</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f0f2f0;--surface:#fff;--border:#d4e6d4;
+  --accent:#3DCD58;--accent2:#1a9c35;--warn:#f0a500;--danger:#d63c2f;
+  --text:#1a1a1a;--dim:#6b8c6b;--radius:6px;
+  --good:#3DCD58;--mod:#f0a500;--bad:#d63c2f;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(61,205,88,.04) 28px,rgba(61,205,88,.04) 29px);pointer-events:none;z-index:9999}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:linear-gradient(90deg,#fff 60%,#f0faf2);box-shadow:0 1px 4px rgba(61,205,88,.12);position:sticky;top:0;z-index:200}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+.logo span{color:var(--text)}
+.hbadge{font-size:.62rem;background:rgba(61,205,88,.12);border:1px solid var(--border);color:var(--dim);padding:3px 10px;border-radius:20px;letter-spacing:.1em}
+
+/* NAV */
+nav{display:flex;gap:0;border-bottom:2px solid var(--border);background:#fff;padding:0 28px;position:sticky;top:57px;z-index:190}
+.nav-btn{font-family:'Space Mono',monospace;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:13px 22px;border:none;background:transparent;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;display:flex;align-items:center;gap:7px}
+.nav-btn:hover{color:var(--accent)}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+.nav-icon{width:14px;height:14px;flex-shrink:0}
+
+/* MAIN */
+main{max-width:1280px;margin:0 auto;padding:24px 24px 80px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* SECTION LABEL */
+.sl{font-family:'Syne',sans-serif;font-size:.63rem;font-weight:600;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.sl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+@media(max-width:860px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* PANEL */
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden}
+.panel-header{font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.panel-accent{position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-bar,var(--accent));opacity:.8}
+
+/* COMPONENT TABLE */
+.comp-table{width:100%;border-collapse:collapse;font-size:.7rem}
+.comp-table th{background:#2a8c3f;color:#fff;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap}
+.comp-table td{padding:9px 12px;border-bottom:1px solid rgba(212,230,212,.6);vertical-align:middle}
+.comp-table tr:last-child td{border-bottom:none}
+.comp-table tr:hover td{background:rgba(61,205,88,.05)}
+.comp-table input[type=number]{width:70px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.7rem;background:#f9fbf9;color:var(--text);text-align:center}
+.comp-table input[type=number]:focus{outline:none;border-color:var(--accent)}
+.price-cell{color:var(--accent2);font-weight:700}
+.total-cell{color:var(--text);font-weight:700}
+
+/* RESULT CARDS */
+.result-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;text-align:center;position:relative;overflow:hidden}
+.result-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--rc-color,var(--accent))}
+.rc-label{font-size:.58rem;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-bottom:8px}
+.rc-val{font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;color:var(--rc-color,var(--accent));line-height:1}
+.rc-sub{font-size:.6rem;color:var(--dim);margin-top:4px}
+
+/* PROGRESS BAR */
+.pbar-wrap{background:#eef5ee;border-radius:3px;height:8px;overflow:hidden;margin-top:6px}
+.pbar-fill{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.4,0,.2,1),background .5s}
+
+/* DIAGRAM AREA */
+.diagram-area{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:24px;overflow:hidden}
+.diagram-title{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+
+/* SVG ANIMATIONS */
+@keyframes flowDash{to{stroke-dashoffset:-20}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes rotate{to{transform:rotate(360deg)}}
+@keyframes pulseRing{0%,100%{r:8;opacity:.8}50%{r:12;opacity:.3}}
+.flow-hot{stroke-dasharray:5 3;animation:flowDash 1.2s linear infinite}
+.flow-cold{stroke-dasharray:5 3;animation:flowDash 1.8s linear infinite}
+.flow-air{stroke-dasharray:4 4;animation:flowDash 1.5s linear infinite}
+.pulse-ring{animation:pulseRing 1.8s ease-in-out infinite}
+.fan-blade{transform-origin:370px 110px;animation:rotate 2s linear infinite}
+.fan-blade2{transform-origin:185px 145px;animation:rotate 1.5s linear infinite}
+.vav-flow{stroke-dasharray:6 4;animation:flowDash 1.3s linear infinite}
+.fcu-flow{stroke-dasharray:4 3;animation:flowDash 1.1s linear infinite}
+
+/* PARAMETER GRAPHIC */
+.param-graphic{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.param-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.param-info{flex:1}
+.param-name{font-size:.68rem;color:var(--text);font-weight:700}
+.param-desc{font-size:.58rem;color:var(--dim);margin-top:1px}
+
+/* METHODOLOGY BOX */
+.methodology{background:linear-gradient(135deg,#f0faf2,#e8f5eb);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-bottom:24px;font-size:.65rem;color:var(--dim);line-height:1.7}
+.methodology strong{color:var(--text)}
+
+/* LABOUR SECTION */
+.labour-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(212,230,212,.5);font-size:.68rem}
+.labour-row:last-child{border-bottom:none}
+.labour-tag{background:rgba(61,205,88,.1);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:.58rem;color:var(--accent2)}
+
+/* STATUS BAR */
+.statusbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--accent);padding:6px 24px;display:flex;align-items:center;gap:24px;font-size:.6rem;color:var(--dim);z-index:300}
+.statusbar span{color:var(--text)}
+
+/* SUMMARY TOTAL */
+.grand-total{background:linear-gradient(135deg,#1a9c35,#3DCD58);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center}
+.gt-label{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;opacity:.85}
+.gt-val{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem}
+.gt-sub{font-size:.6rem;opacity:.75;margin-top:2px}
+
+/* TOOLTIP */
+.tip{position:relative;cursor:help}
+.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:.58rem;padding:4px 8px;border-radius:4px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:999}
+.tip:hover::after{opacity:1}
+
+/* ANIMATED PANEL ENTRY */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.panel{animation:fadeUp .4s ease both}
+
+/* SELECT & INPUT STYLING */
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b8c6b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(61,205,88,.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BMS <span>/ Cost Estimator</span></div>
+  <div class="hbadge">SCHNEIDER ELECTRIC — ECOSTRUXURE</div>
+</header>
+
+<nav id="mainNav">
+  <button class="nav-btn active" onclick="switchTab('ahu')" id="nav-ahu">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 12h10M12 9v6"/><circle cx="12" cy="12" r="2"/></svg>
+    AHU
+  </button>
+  <button class="nav-btn" onclick="switchTab('vav')" id="nav-vav">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h18M9 6l3 6 3-6M9 18l3-6 3 6"/></svg>
+    VAV
+  </button>
+  <button class="nav-btn" onclick="switchTab('fcu')" id="nav-fcu">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12a4 4 0 008 0"/><path d="M12 8v1M12 15v1M8.2 9.2l.7.7M15.1 15.1l.7.7M7 12H8M16 12h1"/></svg>
+    FCU
+  </button>
+  <button class="nav-btn" onclick="switchTab('summary')" id="nav-summary">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+    Summary
+  </button>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════ AHU TAB ═══════════════════════════ -->
+<div class="tab-panel active" id="tab-ahu">
+
+  <div class="sl">System Diagram — Air Handling Unit</div>
+  <div class="diagram-area">
+    <div class="diagram-title">Schneider Electric BMS — AHU Control Architecture</div>
+    <svg width="100%" viewBox="0 0 680 270" style="display:block">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- AHU enclosure -->
+      <rect x="175" y="38" width="330" height="185" rx="10" fill="rgba(61,205,88,.06)" stroke="#3DCD58" stroke-width="1.5"/>
+      <text x="340" y="58" text-anchor="middle" font-family="'Space Mono',monospace" font-size="9" fill="#1a9c35" letter-spacing="2" font-weight="700">AIR HANDLING UNIT</text>
+
+      <!-- Filter section -->
+      <rect x="193" y="78" width="52" height="62" rx="4" fill="rgba(61,205,88,.14)" stroke="#3DCD58" stroke-width="1"/>
+      <line x1="205" y1="78" x2="205" y2="140" stroke="#3DCD58" stroke-width="1" opacity=".5"/>
+      <line x1="217" y1="78" x2="217" y2="140" stroke="#3DCD58" stroke-width="1" opacity=".5"/>
+      <line x1="229" y1="78" x2="229" y2="140" stroke="#3DCD58" stroke-width="1" opacity=".5"/>
+      <line x1="241" y1="78" x2="241" y2="140" stroke="#3DCD58" stroke-width="1" opacity=".5"/>
+      <text x="219" y="157" text-anchor="middle" font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b">Filter</text>
+      <text x="219" y="167" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">G4 / F7</text>
+
+      <!-- Coil section -->
+      <rect x="260" y="78" width="54" height="62" rx="4" fill="rgba(26,127,193,.1)" stroke="#1a7fc1" stroke-width="1"/>
+      <path d="M270 93 Q280 86 292 96 Q304 106 314 93" fill="none" stroke="#1a7fc1" stroke-width="1.5"/>
+      <path d="M270 108 Q280 101 292 111 Q304 121 314 108" fill="none" stroke="#1a7fc1" stroke-width="1.5"/>
+      <path d="M270 123 Q280 116 292 126 Q304 136 314 123" fill="none" stroke="#e85d2f" stroke-width="1.5"/>
+      <text x="287" y="157" text-anchor="middle" font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b">CHW Coil</text>
+      <text x="287" y="167" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">+HW Coil</text>
+
+      <!-- Fan -->
+      <circle cx="370" cy="109" r="30" fill="rgba(61,205,88,.08)" stroke="#3DCD58" stroke-width="1"/>
+      <g class="fan-blade">
+        <path d="M370 79 Q381 88 370 109 Q359 88 370 79Z" fill="rgba(61,205,88,.5)" stroke="#3DCD58" stroke-width="0.5"/>
+        <path d="M400 109 Q391 120 370 109 Q391 98 400 109Z" fill="rgba(61,205,88,.5)" stroke="#3DCD58" stroke-width="0.5"/>
+        <path d="M370 139 Q359 130 370 109 Q381 130 370 139Z" fill="rgba(61,205,88,.5)" stroke="#3DCD58" stroke-width="0.5"/>
+        <path d="M340 109 Q349 98 370 109 Q349 120 340 109Z" fill="rgba(61,205,88,.5)" stroke="#3DCD58" stroke-width="0.5"/>
+      </g>
+      <circle cx="370" cy="109" r="6" fill="#3DCD58"/>
+      <text x="370" y="157" text-anchor="middle" font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b">Supply Fan</text>
+      <text x="370" y="167" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">VFD / EC</text>
+
+      <!-- Damper -->
+      <rect x="420" y="78" width="64" height="62" rx="4" fill="rgba(240,165,0,.1)" stroke="#f0a500" stroke-width="1"/>
+      <line x1="420" y1="109" x2="484" y2="109" stroke="#f0a500" stroke-width="2"/>
+      <line x1="452" y1="78" x2="452" y2="140" stroke="#f0a500" stroke-width="1" opacity=".5"/>
+      <line x1="428" y1="86" x2="476" y2="132" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="452" y="157" text-anchor="middle" font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b">OA Damper</text>
+      <text x="452" y="167" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">Modulating</text>
+
+      <!-- Outdoor air arrow -->
+      <line x1="112" y1="109" x2="173" y2="109" class="flow-air" stroke="#3DCD58" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text x="112" y="103" font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b" font-weight="700">OA</text>
+      <text x="112" y="121" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">Fresh Air</text>
+
+      <!-- Supply air arrow -->
+      <line x1="486" y1="109" x2="566" y2="109" class="flow-air" stroke="#3DCD58" stroke-width="2.5" marker-end="url(#arr)"/>
+      <text x="570" y="105" font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b" font-weight="700">SA</text>
+      <text x="570" y="116" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">Supply</text>
+
+      <!-- Controller bar -->
+      <rect x="238" y="205" width="204" height="38" rx="6" fill="#1a9c35"/>
+      <text text-anchor="middle" font-family="'Syne',sans-serif" font-size="8" fill="#fff" font-weight="700" letter-spacing="1">
+        <tspan x="340" dy="219">SpaceLogic AS-P</tspan>
+        <tspan x="340" dy="13">Controller</tspan>
+      </text>
+
+      <!-- Dashed wires to controller -->
+      <line x1="287" y1="205" x2="270" y2="143" stroke="#3DCD58" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+      <line x1="340" y1="205" x2="370" y2="141" stroke="#3DCD58" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+      <line x1="393" y1="205" x2="452" y2="143" stroke="#3DCD58" stroke-width="1" stroke-dasharray="3 3" opacity=".7"/>
+
+      <!-- CO2 sensor pulse -->
+      <circle cx="219" cy="70" r="6" fill="none" stroke="#3DCD58" stroke-width="1"/>
+      <circle cx="219" cy="70" r="2.5" fill="#3DCD58" class="pulse-ring"/>
+      <text x="175" y="32" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">CO₂/T/RH</text>
+      <line x1="219" y1="64" x2="219" y2="38" stroke="#3DCD58" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+      <!-- DP sensor -->
+      <circle cx="492" cy="70" r="6" fill="none" stroke="#f0a500" stroke-width="1"/>
+      <circle cx="492" cy="70" r="2.5" fill="#f0a500"/>
+      <text x="490" y="32" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">DP Sensor</text>
+      <line x1="492" y1="64" x2="492" y2="38" stroke="#f0a500" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+      <!-- Return air path — straight lines only -->
+      <polyline points="568,135 610,135 610,255 100,255 100,135 112,109" fill="none" stroke="#6b8c6b" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)" opacity=".6"/>
+      <text x="340" y="250" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">Return Air Path</text>
+    </svg>
+  </div>
+
+  <div class="methodology">
+    <strong>BMS Cost Estimation Methodology (AHU):</strong> Based on ASHRAE 90.1 + ASHRAE Guideline 36 + Schneider Electric product catalogue.
+    Costs derived from: <strong>(1) Equipment cost</strong> (material + procurement),
+    <strong>(2) Installation labour</strong> (mechanical + electrical + commissioning),
+    <strong>(3) Engineering overhead</strong> (15% of equipment),
+    <strong>(4) Contingency</strong> (10%),
+    <strong>(5) Integration &amp; testing</strong> (BACnet/EcoStruxure).
+    Labour rates: ₹600–1200/hr (BMS technician), ₹400–700/hr (electrician). Prices in INR, India market 2024–25.
+  </div>
+
+  <div class="sl">AHU Parameters &amp; Component Selection</div>
+  <div class="grid-2">
+
+    <!-- Parameters visual panel -->
+    <div class="panel" style="--accent-bar:#3DCD58">
+      <div class="panel-accent"></div>
+      <div class="panel-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3DCD58" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        AHU System Parameters
+      </div>
+      <div class="param-graphic">
+        <div class="param-icon" style="background:rgba(61,205,88,.12)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3DCD58" stroke-width="2"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <div class="param-info">
+          <div class="param-name">Airflow Capacity (CFM / CMH)</div>
+          <div class="param-desc">Determines fan motor kW, VFD size, duct dimensions &amp; filter area</div>
+        </div>
+      </div>
+      <div class="param-graphic">
+        <div class="param-icon" style="background:rgba(26,127,193,.12)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a7fc1" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
+        </div>
+        <div class="param-info">
+          <div class="param-name">Cooling / Heating Load (kW)</div>
+          <div class="param-desc">Defines CHW coil size, control valve Cv, pump sizing &amp; energy metering</div>
+        </div>
+      </div>
+      <div class="param-graphic">
+        <div class="param-icon" style="background:rgba(240,165,0,.12)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f0a500" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+        </div>
+        <div class="param-info">
+          <div class="param-name">Number of AHU Units</div>
+          <div class="param-desc">Multiplier for all hardware, wiring, programming &amp; commissioning costs</div>
+        </div>
+      </div>
+      <div class="param-graphic">
+        <div class="param-icon" style="background:rgba(214,60,47,.12)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d63c2f" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div class="param-info">
+          <div class="param-name">Control Complexity</div>
+          <div class="param-desc">Affects I/O count, controller model, DCV strategy &amp; DDC programming hours</div>
+        </div>
+      </div>
+      <div class="param-graphic">
+        <div class="param-icon" style="background:rgba(26,156,53,.12)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a9c35" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <div class="param-info">
+          <div class="param-name">Integration Level</div>
+          <div class="param-desc">Standalone vs BACnet/IP vs full EcoStruxure SCADA &amp; trending</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AHU Configuration -->
+    <div class="panel" style="--accent-bar:#1a9c35">
+      <div class="panel-accent"></div>
+      <div class="panel-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a9c35" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Configuration
+      </div>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Number of AHUs</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <input type="range" min="1" max="20" value="1" id="ahuCount" oninput="updateAHU()" style="flex:1">
+        <span id="ahuCountVal" style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;color:var(--accent);min-width:36px;text-align:right">1</span>
+      </div>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">AHU Size</label>
+      <select id="ahuSize" onchange="updateAHU()" style="width:100%;margin-bottom:14px;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="small">Small — &lt;5,000 CFM (Office / Retail)</option>
+        <option value="medium" selected>Medium — 5,000–15,000 CFM (Commercial)</option>
+        <option value="large">Large — &gt;15,000 CFM (Industrial)</option>
+      </select>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Control Type</label>
+      <select id="ahuControl" onchange="updateAHU()" style="width:100%;margin-bottom:14px;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="basic">Basic ON/OFF Control</option>
+        <option value="pid" selected>PID + VFD (Standard)</option>
+        <option value="advanced">Advanced Multi-zone + CO₂ DCV</option>
+      </select>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">BMS Integration</label>
+      <select id="ahuInteg" onchange="updateAHU()" style="width:100%;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="standalone">Standalone (No Network)</option>
+        <option value="bacnet" selected>BACnet/IP Network</option>
+        <option value="scada">Full SCADA / EcoStruxure</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- AHU Component Table -->
+  <div class="sl">Schneider Electric Components — AHU</div>
+  <div class="panel" style="margin-bottom:24px;padding:0">
+    <div class="panel-accent" style="--accent-bar:#3DCD58"></div>
+    <div style="overflow-x:auto">
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Schneider Model</th>
+            <th>Specification</th>
+            <th>Unit Price (₹)</th>
+            <th>Qty</th>
+            <th>Total (₹)</th>
+            <th>Labour (hrs)</th>
+          </tr>
+        </thead>
+        <tbody id="ahuTableBody"></tbody>
+        <tfoot>
+          <tr style="background:rgba(61,205,88,.08)">
+            <td colspan="5" style="font-weight:700;font-size:.72rem;padding:12px 12px">EQUIPMENT SUBTOTAL</td>
+            <td class="price-cell" style="padding:12px;font-size:.82rem" id="ahuEquipTotal">₹0</td>
+            <td style="padding:12px;font-size:.72rem;color:var(--dim)" id="ahuLabourHrs">0 hrs</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- AHU Cost Results -->
+  <div class="sl">Cost Breakdown</div>
+  <div class="grid-4">
+    <div class="result-card" style="--rc-color:#3DCD58">
+      <div class="rc-label">Equipment</div>
+      <div class="rc-val" id="ahuResEquip">₹0</div>
+      <div class="rc-sub">Material + Hardware</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="ahuBarEquip" style="width:60%;background:#3DCD58"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#1a7fc1">
+      <div class="rc-label">Labour</div>
+      <div class="rc-val" id="ahuResLabour">₹0</div>
+      <div class="rc-sub">Installation + Wiring</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="ahuBarLabour" style="width:25%;background:#1a7fc1"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#f0a500">
+      <div class="rc-label">Engineering</div>
+      <div class="rc-val" id="ahuResEng">₹0</div>
+      <div class="rc-sub">Design + Commissioning</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="ahuBarEng" style="width:15%;background:#f0a500"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#d63c2f">
+      <div class="rc-label">Total Estimate</div>
+      <div class="rc-val" id="ahuResTotal">₹0</div>
+      <div class="rc-sub">incl. 10% contingency</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="ahuBarTotal" style="width:100%;background:#d63c2f"></div></div>
+    </div>
+  </div>
+</div><!-- end AHU tab -->
+
+
+<!-- ═══════════════════════════ VAV TAB ═══════════════════════════ -->
+<div class="tab-panel" id="tab-vav">
+
+  <div class="sl">System Diagram — Variable Air Volume</div>
+  <div class="diagram-area">
+    <div class="diagram-title">Schneider Electric BMS — VAV Zone Control Schematic</div>
+    <svg width="100%" viewBox="0 0 680 230" style="display:block">
+      <defs>
+        <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- Main duct -->
+      <rect x="30" y="88" width="210" height="44" rx="4" fill="rgba(61,205,88,.12)" stroke="#3DCD58" stroke-width="1.5"/>
+      <text x="135" y="114" text-anchor="middle" font-family="'Space Mono',monospace" font-size="8" fill="#1a9c35" font-weight="700">MAIN SUPPLY DUCT</text>
+      <!-- Flow arrows in duct -->
+      <line x1="50"  y1="110" x2="80"  y2="110" class="vav-flow" stroke="#3DCD58" stroke-width="1.5" marker-end="url(#arr2)"/>
+      <line x1="100" y1="110" x2="130" y2="110" class="vav-flow" stroke="#3DCD58" stroke-width="1.5" marker-end="url(#arr2)" style="animation-delay:-.4s"/>
+      <line x1="150" y1="110" x2="180" y2="110" class="vav-flow" stroke="#3DCD58" stroke-width="1.5" marker-end="url(#arr2)" style="animation-delay:-.8s"/>
+
+      <!-- VAV Box 1 -->
+      <rect x="248" y="68" width="96" height="84" rx="6" fill="rgba(240,165,0,.1)" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="296" y="88"  text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#f0a500" font-weight="700">VAV BOX 1</text>
+      <line x1="248" y1="110" x2="242" y2="110" stroke="#3DCD58" stroke-width="2"/>
+      <line x1="262" y1="110" x2="330" y2="110" stroke="#f0a500" stroke-width="1.5"/>
+      <line x1="296" y1="94"  x2="296" y2="126" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="296" y="142" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">Zone 1</text>
+      <text x="296" y="152" text-anchor="middle" font-family="'Space Mono',monospace" font-size="6" fill="#aaa">Office</text>
+
+      <!-- VAV Box 2 -->
+      <rect x="374" y="68" width="96" height="84" rx="6" fill="rgba(240,165,0,.1)" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="422" y="88"  text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#f0a500" font-weight="700">VAV BOX 2</text>
+      <line x1="374" y1="110" x2="346" y2="110" stroke="#f0a500" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="388" y1="110" x2="456" y2="110" stroke="#f0a500" stroke-width="1.5"/>
+      <line x1="422" y1="94"  x2="422" y2="126" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="422" y="142" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">Zone 2</text>
+      <text x="422" y="152" text-anchor="middle" font-family="'Space Mono',monospace" font-size="6" fill="#aaa">Meeting</text>
+
+      <!-- VAV Box 3 -->
+      <rect x="500" y="68" width="96" height="84" rx="6" fill="rgba(240,165,0,.1)" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="548" y="88"  text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#f0a500" font-weight="700">VAV BOX 3</text>
+      <line x1="500" y1="110" x2="472" y2="110" stroke="#f0a500" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="514" y1="110" x2="582" y2="110" stroke="#f0a500" stroke-width="1.5"/>
+      <line x1="548" y1="94"  x2="548" y2="126" stroke="#f0a500" stroke-width="1.5"/>
+      <text x="548" y="142" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">Zone 3</text>
+      <text x="548" y="152" text-anchor="middle" font-family="'Space Mono',monospace" font-size="6" fill="#aaa">Lab</text>
+
+      <!-- Zone T/RH sensors -->
+      <circle cx="296" cy="182" r="11" fill="rgba(26,127,193,.15)" stroke="#1a7fc1" stroke-width="1"/>
+      <text x="296" y="186" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#1a7fc1">T/H</text>
+      <circle cx="422" cy="182" r="11" fill="rgba(26,127,193,.15)" stroke="#1a7fc1" stroke-width="1"/>
+      <text x="422" y="186" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#1a7fc1">T/H</text>
+      <circle cx="548" cy="182" r="11" fill="rgba(26,127,193,.15)" stroke="#1a7fc1" stroke-width="1"/>
+      <text x="548" y="186" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#1a7fc1">T/H</text>
+
+      <!-- Sensor wires -->
+      <line x1="296" y1="171" x2="296" y2="153" stroke="#1a7fc1" stroke-width="0.8" stroke-dasharray="2 2"/>
+      <line x1="422" y1="171" x2="422" y2="153" stroke="#1a7fc1" stroke-width="0.8" stroke-dasharray="2 2"/>
+      <line x1="548" y1="171" x2="548" y2="153" stroke="#1a7fc1" stroke-width="0.8" stroke-dasharray="2 2"/>
+
+      <!-- BACnet MS/TP bus -->
+      <line x1="296" y1="193" x2="296" y2="210" stroke="#3DCD58" stroke-width="0.8"/>
+      <line x1="422" y1="193" x2="422" y2="210" stroke="#3DCD58" stroke-width="0.8"/>
+      <line x1="548" y1="193" x2="548" y2="210" stroke="#3DCD58" stroke-width="0.8"/>
+      <line x1="296" y1="210" x2="548" y2="210" stroke="#3DCD58" stroke-width="2" stroke-dasharray="6 3"/>
+      <text x="422" y="224" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#3DCD58" letter-spacing="1">BACnet MS/TP — SpaceLogic Network</text>
+
+      <!-- From AHU label -->
+      <text x="30" y="58"  font-family="'Space Mono',monospace" font-size="8" fill="#6b8c6b" font-weight="700">From AHU</text>
+      <line x1="55" y1="62" x2="55" y2="86" stroke="#6b8c6b" stroke-width="1" marker-end="url(#arr2)"/>
+    </svg>
+  </div>
+
+  <div class="methodology">
+    <strong>VAV Cost Methodology:</strong> Zone-based costing per ASHRAE Guideline 36 VAV sequences.
+    Each zone: VAV box + actuator + zone controller + room sensor + wiring loom.
+    Key parameters: number of zones, pressure-independent (PIBCV) vs pressure-dependent boxes, reheat type, sensor sophistication.
+    Schneider pricing based on <strong>SpaceLogic VAV controllers + SE8000/SE8600 room sensors + AS-B network controllers</strong>.
+  </div>
+
+  <div class="sl">VAV Configuration</div>
+  <div class="grid-2">
+    <div class="panel" style="--accent-bar:#f0a500">
+      <div class="panel-accent"></div>
+      <div class="panel-header">VAV Parameters</div>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Number of VAV Zones</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <input type="range" min="1" max="50" value="5" id="vavCount" oninput="updateVAV()" style="flex:1">
+        <span id="vavCountVal" style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;color:#f0a500;min-width:36px;text-align:right">5</span>
+      </div>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">VAV Box Type</label>
+      <select id="vavType" onchange="updateVAV()" style="width:100%;margin-bottom:14px;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="pd">Pressure Dependent (Basic)</option>
+        <option value="pi" selected>Pressure Independent — PIBCV</option>
+      </select>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Reheat Type</label>
+      <select id="vavReheat" onchange="updateVAV()" style="width:100%;margin-bottom:14px;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="none">No Reheat</option>
+        <option value="electric" selected>Electric Reheat Coil</option>
+        <option value="hydronic">Hydronic Reheat Coil</option>
+      </select>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Room Sensor Type</label>
+      <select id="vavSensor" onchange="updateVAV()" style="width:100%;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="basic">Basic Temp Only (SE8000)</option>
+        <option value="co2" selected>Temp + CO₂ + Humidity (SE8600)</option>
+        <option value="display">Display + Override (SE8650)</option>
+      </select>
+    </div>
+
+    <div class="panel" style="--accent-bar:#f0a500">
+      <div class="panel-accent"></div>
+      <div class="panel-header">Zone Visual + Labour</div>
+
+      <div style="font-size:.6rem;color:var(--dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em">Zone Count Visualisation</div>
+      <div id="vavZoneViz" style="display:flex;flex-wrap:wrap;gap:4px;min-height:56px;align-items:flex-start;align-content:flex-start;margin-bottom:16px"></div>
+
+      <div class="labour-row"><span>VAV box + actuator installation</span><span class="labour-tag" id="vavLab1">—</span></div>
+      <div class="labour-row"><span>Controller wiring + termination</span><span class="labour-tag" id="vavLab2">—</span></div>
+      <div class="labour-row"><span>Sensor mounting + calibration</span><span class="labour-tag" id="vavLab3">—</span></div>
+      <div class="labour-row"><span>Network integration + point map</span><span class="labour-tag" id="vavLab4">—</span></div>
+    </div>
+  </div>
+
+  <div class="sl">Cost Breakdown</div>
+  <div class="grid-4">
+    <div class="result-card" style="--rc-color:#f0a500">
+      <div class="rc-label">Equipment</div>
+      <div class="rc-val" id="vavResEquip">₹0</div>
+      <div class="rc-sub">VAV Boxes + Actuators</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="vavBarEquip" style="width:60%;background:#f0a500"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#1a7fc1">
+      <div class="rc-label">Controllers</div>
+      <div class="rc-val" id="vavResCont">₹0</div>
+      <div class="rc-sub">SpaceLogic + Sensors</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="vavBarCont" style="width:25%;background:#1a7fc1"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#3DCD58">
+      <div class="rc-label">Labour</div>
+      <div class="rc-val" id="vavResLabour">₹0</div>
+      <div class="rc-sub">Installation + Testing</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="vavBarLabour" style="width:20%;background:#3DCD58"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#d63c2f">
+      <div class="rc-label">Total Estimate</div>
+      <div class="rc-val" id="vavResTotal">₹0</div>
+      <div class="rc-sub">incl. 10% contingency</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="vavBarTotal" style="width:100%;background:#d63c2f"></div></div>
+    </div>
+  </div>
+</div><!-- end VAV tab -->
+
+
+<!-- ═══════════════════════════ FCU TAB ═══════════════════════════ -->
+<div class="tab-panel" id="tab-fcu">
+
+  <div class="sl">System Diagram — Fan Coil Unit</div>
+  <div class="diagram-area">
+    <div class="diagram-title">Schneider Electric BMS — FCU Control Architecture (SE8000 Series)</div>
+    <svg width="100%" viewBox="0 0 680 210" style="display:block">
+      <defs>
+        <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- FCU enclosure -->
+      <rect x="70" y="38" width="210" height="130" rx="8" fill="rgba(26,127,193,.07)" stroke="#1a7fc1" stroke-width="1.5"/>
+      <text x="175" y="58" text-anchor="middle" font-family="'Space Mono',monospace" font-size="8" fill="#1a7fc1" font-weight="700">FAN COIL UNIT</text>
+
+      <!-- Coil inside FCU -->
+      <rect x="82" y="68" width="64" height="56" rx="4" fill="rgba(232,93,47,.1)" stroke="#e85d2f" stroke-width="1"/>
+      <path d="M92 82 Q103 75 114 85 Q125 95 136 82" fill="none" stroke="#e85d2f" stroke-width="1.5"/>
+      <path d="M92 99 Q103 92 114 102 Q125 112 136 99" fill="none" stroke="#1a7fc1" stroke-width="1.5"/>
+      <text x="114" y="136" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">CHW Coil</text>
+
+      <!-- Animated fan -->
+      <g class="fan-blade2">
+        <circle cx="185" cy="145" r="24" fill="none" stroke="#1a7fc1" stroke-width="0.8" opacity=".4"/>
+        <path d="M185 121 Q194 129 185 145 Q176 129 185 121Z" fill="rgba(26,127,193,.4)" stroke="#1a7fc1" stroke-width="0.5"/>
+        <path d="M209 145 Q201 154 185 145 Q201 136 209 145Z" fill="rgba(26,127,193,.4)" stroke="#1a7fc1" stroke-width="0.5"/>
+        <path d="M185 169 Q176 161 185 145 Q194 161 185 169Z" fill="rgba(26,127,193,.4)" stroke="#1a7fc1" stroke-width="0.5"/>
+        <path d="M161 145 Q169 136 185 145 Q169 154 161 145Z" fill="rgba(26,127,193,.4)" stroke="#1a7fc1" stroke-width="0.5"/>
+      </g>
+      <circle cx="185" cy="145" r="5" fill="#1a7fc1"/>
+      <text x="185" y="165" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">EC Fan</text>
+
+      <!-- CHW pipes left -->
+      <line x1="70" y1="80"  x2="30" y2="80"  class="fcu-flow" stroke="#1a7fc1" stroke-width="2" marker-start="url(#arr3)"/>
+      <line x1="70" y1="110" x2="30" y2="110" class="fcu-flow" stroke="#e85d2f" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="8"  y="77"  font-family="'Space Mono',monospace" font-size="7" fill="#1a7fc1" font-weight="700">CHW</text>
+      <text x="8"  y="107" font-family="'Space Mono',monospace" font-size="7" fill="#e85d2f" font-weight="700">CHW R</text>
+
+      <!-- Supply air right -->
+      <line x1="282" y1="103" x2="350" y2="103" class="fcu-flow" stroke="#3DCD58" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="356" y="100" font-family="'Space Mono',monospace" font-size="8" fill="#3DCD58" font-weight="700">Conditioned Air</text>
+      <text x="356" y="112" font-family="'Space Mono',monospace" font-size="7" fill="#aaa">to Room</text>
+
+      <!-- 2-way modulating valve -->
+      <rect x="292" y="60" width="46" height="32" rx="4" fill="rgba(61,205,88,.1)" stroke="#3DCD58" stroke-width="1"/>
+      <text x="315" y="80" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#3DCD58">2-Way</text>
+      <text x="315" y="103" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">Valve</text>
+
+      <!-- Room thermostat display -->
+      <rect x="430" y="48" width="96" height="100" rx="8" fill="rgba(61,205,88,.08)" stroke="#3DCD58" stroke-width="1.5"/>
+      <text x="478" y="68" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#1a9c35" font-weight="700">SE8650</text>
+      <circle cx="478" cy="95" r="22" fill="none" stroke="#3DCD58" stroke-width="1.2"/>
+      <circle cx="478" cy="95" r="3"  fill="#3DCD58"/>
+      <path d="M478 73 L484 85 L478 95 L472 85Z" fill="#3DCD58" opacity=".7"/>
+      <text x="478" y="160" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">Thermostat</text>
+
+      <!-- SE8000 controller block -->
+      <rect x="566" y="48" width="106" height="100" rx="6" fill="#1a9c35"/>
+      <text x="619" y="78"  text-anchor="middle" font-family="'Syne',sans-serif" font-size="9" fill="#fff" font-weight="700">SE8000</text>
+      <text x="619" y="96"  text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="rgba(255,255,255,.85)">FCU Controller</text>
+      <text x="619" y="111" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="rgba(255,255,255,.7)">BACnet MS/TP</text>
+      <text x="619" y="125" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="rgba(255,255,255,.7)">Modbus RTU</text>
+      <text x="619" y="160" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="#6b8c6b">Controller</text>
+
+      <!-- Connection lines -->
+      <line x1="526" y1="98" x2="564" y2="98" stroke="#3DCD58" stroke-width="1" stroke-dasharray="3 2"/>
+      <line x1="338" y1="76" x2="428" y2="86" stroke="#3DCD58" stroke-width="1" stroke-dasharray="3 2"/>
+    </svg>
+  </div>
+
+  <div class="methodology">
+    <strong>FCU Cost Methodology:</strong> Room-by-room unit costing. Key parameters: pipe configuration (2-pipe seasonal / 4-pipe simultaneous),
+    fan speed control (3-speed relay vs EC motor), valve type (2-way/3-way), controller model.
+    Schneider's <strong>SE8000 series</strong> handles fan speed, valve position, setpoint &amp; scheduling.
+    Labour-intensive due to individual room access; BMS allocation typically 35–40% equipment, 40–45% labour, 15–20% engineering.
+  </div>
+
+  <div class="sl">FCU Configuration</div>
+  <div class="grid-2">
+    <div class="panel" style="--accent-bar:#1a7fc1">
+      <div class="panel-accent"></div>
+      <div class="panel-header">FCU Parameters</div>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Number of FCU Units</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <input type="range" min="1" max="100" value="10" id="fcuCount" oninput="updateFCU()" style="flex:1">
+        <span id="fcuCountVal" style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;color:#1a7fc1;min-width:36px;text-align:right">10</span>
+      </div>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Pipe Configuration</label>
+      <select id="fcuPipe" onchange="updateFCU()" style="width:100%;margin-bottom:14px;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="2pipe" selected>2-Pipe (Cooling only / Seasonal switching)</option>
+        <option value="4pipe">4-Pipe (Simultaneous Heating + Cooling)</option>
+      </select>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Fan Speed Control</label>
+      <select id="fcuFan" onchange="updateFCU()" style="width:100%;margin-bottom:14px;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="3speed" selected>3-Speed Relay Control</option>
+        <option value="ec">EC Motor (Continuous Variable)</option>
+      </select>
+
+      <label style="font-size:.62rem;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:4px">Controller Model</label>
+      <select id="fcuCtrl" onchange="updateFCU()" style="width:100%;padding:9px 32px 9px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace;font-size:.68rem;background:#f9fbf9;color:var(--text)">
+        <option value="se8000">SE8000 Standard</option>
+        <option value="se8650" selected>SE8650 with Display</option>
+        <option value="se9000">SE9000 Advanced</option>
+      </select>
+    </div>
+
+    <div class="panel" style="--accent-bar:#1a7fc1">
+      <div class="panel-accent"></div>
+      <div class="panel-header">Labour &amp; Cost Distribution</div>
+
+      <div class="labour-row"><span>Mechanical installation (per FCU)</span><span class="labour-tag" id="fcuLab1">—</span></div>
+      <div class="labour-row"><span>Electrical wiring (per FCU)</span><span class="labour-tag" id="fcuLab2">—</span></div>
+      <div class="labour-row"><span>Control panel termination</span><span class="labour-tag" id="fcuLab3">—</span></div>
+      <div class="labour-row"><span>BMS programming + point mapping</span><span class="labour-tag" id="fcuLab4">—</span></div>
+      <div class="labour-row"><span>Testing &amp; commissioning</span><span class="labour-tag" id="fcuLab5">—</span></div>
+
+      <div style="margin-top:16px">
+        <div style="font-size:.6rem;color:var(--dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.1em">Cost Distribution Chart</div>
+        <div id="fcuBarChart"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl">Cost Breakdown</div>
+  <div class="grid-4">
+    <div class="result-card" style="--rc-color:#1a7fc1">
+      <div class="rc-label">Equipment</div>
+      <div class="rc-val" id="fcuResEquip">₹0</div>
+      <div class="rc-sub">Controllers + Valves</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="fcuBarEquip" style="width:60%;background:#1a7fc1"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#3DCD58">
+      <div class="rc-label">Labour</div>
+      <div class="rc-val" id="fcuResLabour">₹0</div>
+      <div class="rc-sub">Install + Commission</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="fcuBarLabour" style="width:40%;background:#3DCD58"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#f0a500">
+      <div class="rc-label">Engineering</div>
+      <div class="rc-val" id="fcuResEng">₹0</div>
+      <div class="rc-sub">Design + Overhead</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="fcuBarEng" style="width:15%;background:#f0a500"></div></div>
+    </div>
+    <div class="result-card" style="--rc-color:#d63c2f">
+      <div class="rc-label">Total Estimate</div>
+      <div class="rc-val" id="fcuResTotal">₹0</div>
+      <div class="rc-sub">incl. 10% contingency</div>
+      <div class="pbar-wrap"><div class="pbar-fill" id="fcuBarTotal" style="width:100%;background:#d63c2f"></div></div>
+    </div>
+  </div>
+</div><!-- end FCU tab -->
+
+
+<!-- ═══════════════════════════ SUMMARY TAB ═══════════════════════════ -->
+<div class="tab-panel" id="tab-summary">
+
+  <div class="sl">Project Cost Summary</div>
+  <div class="grand-total">
+    <div>
+      <div class="gt-label">Total BMS Project Estimate</div>
+      <div class="gt-sub" id="gtSub">AHU + VAV + FCU combined</div>
+    </div>
+    <div style="text-align:right">
+      <div class="gt-val" id="grandTotal">₹0</div>
+      <div class="gt-sub">including all overheads &amp; contingency</div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="panel" style="--accent-bar:#3DCD58">
+      <div class="panel-accent"></div>
+      <div class="panel-header" style="color:#3DCD58">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3DCD58" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>
+        AHU Systems
+      </div>
+      <div id="sumAHU" style="font-size:.72rem"></div>
+    </div>
+    <div class="panel" style="--accent-bar:#f0a500">
+      <div class="panel-accent"></div>
+      <div class="panel-header" style="color:#f0a500">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f0a500" stroke-width="2"><path d="M3 12h18M9 6l3 6 3-6"/></svg>
+        VAV Systems
+      </div>
+      <div id="sumVAV" style="font-size:.72rem"></div>
+    </div>
+    <div class="panel" style="--accent-bar:#1a7fc1">
+      <div class="panel-accent"></div>
+      <div class="panel-header" style="color:#1a7fc1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a7fc1" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12a4 4 0 008 0"/></svg>
+        FCU Systems
+      </div>
+      <div id="sumFCU" style="font-size:.72rem"></div>
+    </div>
+  </div>
+
+  <div class="sl">Methodology &amp; Standards Applied</div>
+  <div class="panel" style="--accent-bar:#d63c2f">
+    <div class="panel-accent"></div>
+    <div class="panel-header">BMS Cost Estimation Standards</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:.65rem;color:var(--dim);line-height:1.8">
+      <div>
+        <strong style="color:var(--text);display:block;margin-bottom:4px">ASHRAE Guideline 36</strong>
+        High-performance sequences of operation for HVAC systems. Equipment sizing and control sequences applied for AHU, VAV, and FCU systems.
+      </div>
+      <div>
+        <strong style="color:var(--text);display:block;margin-bottom:4px">CIBSE / RS Means</strong>
+        Labour hour benchmarks from CIBSE commissioning guides. Regional India multiplier applied to international base rates.
+      </div>
+      <div>
+        <strong style="color:var(--text);display:block;margin-bottom:4px">Engineering Overhead (15%)</strong>
+        Covers: design drawings, loop diagrams, points schedule, DDC programming, submittals, O&amp;M manuals, project management.
+      </div>
+      <div>
+        <strong style="color:var(--text);display:block;margin-bottom:4px">Contingency (10%)</strong>
+        Applied to subtotal for unforeseen site conditions, scope creep, integration complications, and retesting.
+      </div>
+      <div>
+        <strong style="color:var(--text);display:block;margin-bottom:4px">Schneider EcoStruxure</strong>
+        SpaceLogic AS-P / AS-B controllers, SE8000 / SE8650 / SE9000 room sensors, ATV VFD drives, SXWAS40QBXX BACnet/IP gateway, VXT/VVF modulating valves.
+      </div>
+      <div>
+        <strong style="color:var(--text);display:block;margin-bottom:4px">Labour Rate Schedule (India)</strong>
+        BMS Engineer ₹1,000/hr · Electrician ₹550/hr · Mechanical Fitter ₹500/hr · Commissioning Engineer ₹1,200/hr · Blended avg ₹700/hr
+      </div>
+    </div>
+  </div>
+
+  <div class="sl" style="margin-top:24px">Disclaimer</div>
+  <div style="background:#fffaf0;border:1px solid #f0e0a0;border-radius:var(--radius);padding:14px 18px;font-size:.62rem;color:#8a7040;line-height:1.7">
+    Estimates are indicative based on Schneider Electric India catalogue pricing (2024–25) and standard BMS industry labour norms.
+    Actual costs will vary based on site conditions, building specifications, final equipment selection, negotiated rates, and applicable taxes (GST 18%).
+    This tool should be used for preliminary budgeting only. A detailed bill of quantities (BOQ) is recommended for final tendering.
+  </div>
+</div><!-- end Summary tab -->
+
+</main>
+
+<div class="statusbar">
+  <span>BMS Cost Estimator</span>
+  <span>Platform: <span>Schneider EcoStruxure</span></span>
+  <span>Rates: <span>India 2024–25 (INR)</span></span>
+  <span>Last updated: <span id="sbTime">—</span></span>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  AHU DATA
+// ═══════════════════════════════════════════════
+const AHU_COMPONENTS = {
+  small: {
+    basic: [
+      {name:"SpaceLogic AS-B Controller",     model:"SXWAS10Q0X00000",       spec:"8AI/4AO/8BI/4BO",          price:42000, labour:6},
+      {name:"VSD / VFD (Fan Motor)",          model:"ATV12H018M2",            spec:"1.8 kW, 1-phase",          price:18000, labour:4},
+      {name:"CO₂ + Temp + RH Sensor",         model:"SE8600F5S45B0",          spec:"Wall mount, BACnet",        price:12000, labour:2},
+      {name:"Supply Air Temp Sensor",         model:"SES31.1",               spec:"Duct NTC, 0–50°C",          price:3200,  labour:1},
+      {name:"Differential Pressure Sensor",  model:"QBM65.1-25",            spec:"0–250 Pa, filter DP",       price:8500,  labour:1.5},
+      {name:"2-Way CHW Valve",                model:"VXT25.20",              spec:"DN20, 16 bar",              price:6200,  labour:2},
+    ],
+    pid: [
+      {name:"SpaceLogic AS-P Controller",     model:"SXWAS10Q0X00000",       spec:"16AI/8AO/16BI/8BO",        price:68000, labour:8},
+      {name:"VSD / VFD (Fan Motor)",          model:"ATV32HU22M2",           spec:"2.2 kW VFD",               price:26000, labour:5},
+      {name:"CO₂ + Temp + RH Sensor (×2)",   model:"SE8600F5S45B0",         spec:"Wall mount, BACnet",        price:24000, labour:4},
+      {name:"Supply Air Temp Sensor",         model:"SES31.1",               spec:"Duct NTC",                 price:3200,  labour:1},
+      {name:"Differential Pressure Sensor",  model:"QBM65.1-25",            spec:"Filter + fan DP",          price:8500,  labour:1.5},
+      {name:"2-Way CHW Valve + Actuator",     model:"VXT32.15 + SFA21.1",    spec:"DN15, Modulating",         price:16800, labour:3},
+      {name:"Modbus / BACnet Gateway",        model:"SXWAS40QBXX",          spec:"BACnet/IP ↔ Modbus",       price:14000, labour:2},
+    ],
+    advanced: [
+      {name:"SpaceLogic AS-P Controller",     model:"SXWAS20Q0X00000",       spec:"32AI/16AO/32BI/16BO",      price:95000, labour:10},
+      {name:"VSD / VFD (Fan Motor)",          model:"ATV320U30M3C",          spec:"3 kW VFD",                 price:32000, labour:6},
+      {name:"CO₂ + Temp + RH (×4 zones)",    model:"SE8600F5S45B0",         spec:"Multi-zone DCV",           price:48000, labour:8},
+      {name:"Supply + Return Air Sensor",     model:"SES31.1 × 2",          spec:"Duct NTC pair",            price:6400,  labour:2},
+      {name:"Filter + Duct DP Sensors",       model:"QBM65.1-25 × 2",       spec:"Dual DP monitoring",       price:17000, labour:3},
+      {name:"3-Way CHW Valve + Actuator",     model:"VXP47.25-6.3 + SQX61", spec:"DN25, 3-way",              price:28000, labour:4},
+      {name:"Hot Water Valve + Actuator",     model:"VVF22.25 + SFA21.1",   spec:"DN25 modulating HW",       price:22000, labour:3},
+      {name:"EcoStruxure BACnet/IP Gateway",  model:"SXWAS40QBXX",          spec:"Full IP integration",      price:18000, labour:3},
+    ]
+  }
+};
+
+const SIZE_MULT  = {small:1, medium:1.65, large:2.8};
+const INTEG_ADD  = {standalone:0, bacnet:15000, scada:55000};
+const LABOUR_RATE = {engineer:1000, electrician:550, mech:500, commission:1200};
+
+let ahuTotal=0, vavTotal=0, fcuTotal=0;
+
+// ═══════════════════════════════════════════════
+//  AHU FUNCTIONS
+// ═══════════════════════════════════════════════
+function buildAHUTable(){
+  const count = parseInt(document.getElementById('ahuCount').value);
+  const size  = document.getElementById('ahuSize').value;
+  const ctrl  = document.getElementById('ahuControl').value;
+  const integ = document.getElementById('ahuInteg').value;
+  document.getElementById('ahuCountVal').textContent = count;
+
+  const comps  = AHU_COMPONENTS.small[ctrl] || AHU_COMPONENTS.small.pid;
+  const mult   = SIZE_MULT[size];
+  const tbody  = document.getElementById('ahuTableBody');
+  let equipSum = 0, labourHrs = 0;
+
+  tbody.innerHTML = comps.map(c => {
+    const adjPrice = Math.round(c.price * mult);
+    const total    = adjPrice * count;
+    const lhrs     = c.labour * count;
+    equipSum  += total;
+    labourHrs += lhrs;
+    return `<tr>
+      <td>${c.name}</td>
+      <td style="color:var(--dim);font-size:.62rem">${c.model}</td>
+      <td style="color:var(--dim);font-size:.62rem">${c.spec}</td>
+      <td class="price-cell">₹${adjPrice.toLocaleString('en-IN')}</td>
+      <td><input type="number" value="${count}" min="0" max="50" readonly/></td>
+      <td class="total-cell">₹${total.toLocaleString('en-IN')}</td>
+      <td style="color:var(--dim)">${lhrs.toFixed(1)} h</td>
+    </tr>`;
+  }).join('');
+
+  equipSum += INTEG_ADD[integ];
+  document.getElementById('ahuEquipTotal').textContent = '₹' + equipSum.toLocaleString('en-IN');
+  document.getElementById('ahuLabourHrs').textContent  = labourHrs.toFixed(1) + ' hrs';
+
+  const labourCost  = Math.round(labourHrs * LABOUR_RATE.engineer * 0.6 + labourHrs * LABOUR_RATE.electrician * 0.4);
+  const engCost     = Math.round(equipSum * 0.15);
+  const subtotal    = equipSum + labourCost + engCost;
+  const contingency = Math.round(subtotal * 0.10);
+  const total       = subtotal + contingency;
+
+  setCard('ahuResEquip',  equipSum,   'K');
+  setCard('ahuResLabour', labourCost, 'K');
+  setCard('ahuResEng',    engCost,    'K');
+  setCard('ahuResTotal',  total,      'K');
+
+  setBar('ahuBarEquip',  equipSum,  total);
+  setBar('ahuBarLabour', labourCost,total);
+  setBar('ahuBarEng',    engCost,   total);
+
+  ahuTotal = total;
+  updateSummary();
+  tick();
+}
+function updateAHU(){ buildAHUTable(); }
+
+// ═══════════════════════════════════════════════
+//  VAV DATA + FUNCTIONS
+// ═══════════════════════════════════════════════
+const VAV_PRICES = {
+  box:     {pd:28000, pi:45000},
+  actuator: 12000,
+  ctrl:     22000,
+  sensor:  {basic:5500, co2:13500, display:19000},
+  reheat:  {none:0, electric:18000, hydronic:32000},
+  wiring:   3500
+};
+const VAV_LABOUR_PER_ZONE = 14;
+
+function updateVAV(){
+  const n      = parseInt(document.getElementById('vavCount').value);
+  const type   = document.getElementById('vavType').value;
+  const reheat = document.getElementById('vavReheat').value;
+  const sensor = document.getElementById('vavSensor').value;
+  document.getElementById('vavCountVal').textContent = n;
+
+  // Zone visualisation dots
+  const viz = document.getElementById('vavZoneViz');
+  viz.innerHTML = '';
+  const show = Math.min(n, 30);
+  for(let i=0; i<show; i++){
+    const d = document.createElement('div');
+    const opacity = (0.3 + (i/n)*0.7).toFixed(2);
+    d.style.cssText = `width:18px;height:18px;border-radius:3px;background:rgba(240,165,0,${opacity});border:1px solid #f0a500;font-size:8px;display:flex;align-items:center;justify-content:center;color:#8a5c00;font-weight:700;transition:all .3s`;
+    d.textContent = i < 9 ? (i+1) : '';
+    viz.appendChild(d);
+  }
+  if(n > 30){
+    const m = document.createElement('div');
+    m.style.cssText = 'font-size:.6rem;color:var(--dim);align-self:center;margin-left:4px';
+    m.textContent = `+${n-30} more`;
+    viz.appendChild(m);
+  }
+
+  const boxCost    = VAV_PRICES.box[type] * n;
+  const actCost    = VAV_PRICES.actuator  * n;
+  const ctrlCost   = VAV_PRICES.ctrl      * n;
+  const snsCost    = VAV_PRICES.sensor[sensor] * n;
+  const reheatCost = VAV_PRICES.reheat[reheat] * n;
+  const wireCost   = VAV_PRICES.wiring    * n;
+  const equipSum   = boxCost + actCost + ctrlCost + snsCost + reheatCost + wireCost;
+
+  const labHrs   = VAV_LABOUR_PER_ZONE * n;
+  const labCost  = Math.round(labHrs * 750);
+  const engCost  = Math.round(equipSum * 0.15);
+  const subtotal = equipSum + labCost + engCost;
+  const total    = Math.round(subtotal * 1.10);
+
+  const lz = VAV_LABOUR_PER_ZONE;
+  document.getElementById('vavLab1').textContent = Math.round(lz*0.35*n) + ' hrs';
+  document.getElementById('vavLab2').textContent = Math.round(lz*0.25*n) + ' hrs';
+  document.getElementById('vavLab3').textContent = Math.round(lz*0.25*n) + ' hrs';
+  document.getElementById('vavLab4').textContent = Math.round(lz*0.15*n) + ' hrs';
+
+  setCard('vavResEquip',  equipSum,  'K');
+  setCard('vavResCont',   ctrlCost,  'K');
+  setCard('vavResLabour', labCost,   'K');
+  setCard('vavResTotal',  total,     'K');
+
+  setBar('vavBarEquip',  equipSum,  total);
+  setBar('vavBarCont',   ctrlCost,  total);
+  setBar('vavBarLabour', labCost,   total);
+
+  vavTotal = total;
+  updateSummary();
+  tick();
+}
+
+// ═══════════════════════════════════════════════
+//  FCU DATA + FUNCTIONS
+// ═══════════════════════════════════════════════
+const FCU_CTRL  = {se8000:14000, se8650:19000, se9000:28000};
+const FCU_VALVE = {'2pipe':8500, '4pipe':16000};
+const FCU_FAN   = {'3speed':0,   'ec':7500};
+const FCU_LABOUR_PER_UNIT = {mech:3, elec:2.5, panel:1, prog:1.5, commission:2};
+
+function updateFCU(){
+  const n    = parseInt(document.getElementById('fcuCount').value);
+  const pipe = document.getElementById('fcuPipe').value;
+  const fan  = document.getElementById('fcuFan').value;
+  const ctrl = document.getElementById('fcuCtrl').value;
+  document.getElementById('fcuCountVal').textContent = n;
+
+  const ctrlCost  = FCU_CTRL[ctrl]  * n;
+  const valveCost = FCU_VALVE[pipe] * n;
+  const fanAdd    = FCU_FAN[fan]    * n;
+  const wireCost  = 4000            * n;
+  const equipSum  = ctrlCost + valveCost + fanAdd + wireCost;
+
+  const lpu    = FCU_LABOUR_PER_UNIT;
+  const labHrs = (lpu.mech + lpu.elec + lpu.panel + lpu.prog + lpu.commission) * n;
+  const labCost = Math.round(labHrs * 650);
+  const engCost = Math.round(equipSum * 0.15);
+  const subtotal= equipSum + labCost + engCost;
+  const total   = Math.round(subtotal * 1.10);
+
+  document.getElementById('fcuLab1').textContent = (lpu.mech       * n).toFixed(1) + ' hrs';
+  document.getElementById('fcuLab2').textContent = (lpu.elec       * n).toFixed(1) + ' hrs';
+  document.getElementById('fcuLab3').textContent = (lpu.panel      * n).toFixed(1) + ' hrs';
+  document.getElementById('fcuLab4').textContent = (lpu.prog       * n).toFixed(1) + ' hrs';
+  document.getElementById('fcuLab5').textContent = (lpu.commission * n).toFixed(1) + ' hrs';
+
+  // Mini bar chart
+  const items = [
+    {label:'Controllers', val:ctrlCost,  color:'#1a7fc1'},
+    {label:'Valves',      val:valveCost, color:'#3DCD58'},
+    {label:'Labour',      val:labCost,   color:'#f0a500'},
+    {label:'Engineering', val:engCost,   color:'#d63c2f'},
+  ];
+  const mx = Math.max(...items.map(x => x.val));
+  document.getElementById('fcuBarChart').innerHTML = items.map(it => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <div style="width:70px;font-size:.58rem;color:var(--dim);text-align:right;flex-shrink:0">${it.label}</div>
+      <div style="flex:1;background:#eef5ee;border-radius:3px;height:7px;overflow:hidden">
+        <div style="width:${Math.round(it.val/mx*100)}%;height:100%;background:${it.color};border-radius:3px;transition:width .6s ease"></div>
+      </div>
+      <div style="font-size:.6rem;color:var(--text);min-width:48px;text-align:right">₹${(it.val/1000).toFixed(1)}K</div>
+    </div>`).join('');
+
+  setCard('fcuResEquip',  equipSum,  'K');
+  setCard('fcuResLabour', labCost,   'K');
+  setCard('fcuResEng',    engCost,   'K');
+  setCard('fcuResTotal',  total,     'K');
+
+  setBar('fcuBarEquip',  equipSum,  total);
+  setBar('fcuBarLabour', labCost,   total);
+  setBar('fcuBarEng',    engCost,   total);
+
+  fcuTotal = total;
+  updateSummary();
+  tick();
+}
+
+// ═══════════════════════════════════════════════
+//  SUMMARY
+// ═══════════════════════════════════════════════
+function updateSummary(){
+  const grand = ahuTotal + vavTotal + fcuTotal;
+  const gt = document.getElementById('grandTotal');
+  gt.textContent = grand >= 1000000
+    ? '₹' + (grand/1000000).toFixed(2) + 'M'
+    : '₹' + (grand/1000).toFixed(1) + 'K';
+
+  const mkRow = (label, val, color) =>
+    `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(212,230,212,.5);font-size:.68rem">
+       <span style="color:var(--dim)">${label}</span>
+       <span style="color:${color};font-weight:700">₹${(val/1000).toFixed(1)}K</span>
+     </div>`;
+
+  document.getElementById('sumAHU').innerHTML =
+    mkRow('Equipment + Hardware', ahuTotal*0.55, '#3DCD58') +
+    mkRow('Labour (Install+Comm)', ahuTotal*0.22, '#1a7fc1') +
+    mkRow('Engineering (15%)', ahuTotal*0.13, '#f0a500') +
+    mkRow('Contingency (10%)', ahuTotal*0.10, '#d63c2f') +
+    `<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.8rem"><strong>Total</strong><strong style="color:#3DCD58">₹${(ahuTotal/1000).toFixed(1)}K</strong></div>`;
+
+  document.getElementById('sumVAV').innerHTML =
+    mkRow('VAV Boxes + Actuators', vavTotal*0.50, '#f0a500') +
+    mkRow('Controllers + Sensors', vavTotal*0.20, '#3DCD58') +
+    mkRow('Labour (Install+Test)', vavTotal*0.18, '#1a7fc1') +
+    mkRow('Eng + Contingency', vavTotal*0.12, '#d63c2f') +
+    `<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.8rem"><strong>Total</strong><strong style="color:#f0a500">₹${(vavTotal/1000).toFixed(1)}K</strong></div>`;
+
+  document.getElementById('sumFCU').innerHTML =
+    mkRow('SE Controllers + Valves', fcuTotal*0.52, '#1a7fc1') +
+    mkRow('Wiring + Materials', fcuTotal*0.13, '#3DCD58') +
+    mkRow('Labour (Install+Comm)', fcuTotal*0.22, '#f0a500') +
+    mkRow('Eng + Contingency', fcuTotal*0.13, '#d63c2f') +
+    `<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.8rem"><strong>Total</strong><strong style="color:#1a7fc1">₹${(fcuTotal/1000).toFixed(1)}K</strong></div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  TAB SWITCH
+// ═══════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b  => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  if(tab === 'summary') updateSummary();
+}
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+function setCard(id, val, unit){
+  document.getElementById(id).textContent = unit === 'K'
+    ? '₹' + (val/1000).toFixed(1) + 'K'
+    : '₹' + val.toLocaleString('en-IN');
+}
+function setBar(id, val, max){
+  const pct = max > 0 ? Math.max(3, Math.round(val/max*100)) : 3;
+  document.getElementById(id).style.width = pct + '%';
+}
+function tick(){
+  document.getElementById('sbTime').textContent = new Date().toLocaleTimeString();
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+buildAHUTable();
+updateVAV();
+updateFCU();
+</script>
+</body>
+</html>
